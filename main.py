@@ -1,7 +1,8 @@
 import telebot
 from telebot import types
+import config
 
-bot = telebot.TeleBot('1229183954:AAGS4_Ro8X36bEKsWGKsnSZk4EiXiVh6GEE')
+bot = telebot.TeleBot(config.TOKEN)
 
 name = '';
 gender = '';
@@ -20,7 +21,9 @@ def start(message):
 def get_name(message):  # получаем фамилию
     global name;
     name = message.text;
-    bot.send_message(message.from_user.id, "Какой твой пол?")
+    keyboard = telebot.types.ReplyKeyboardMarkup(True, True)
+    keyboard.row('Мужской', 'Женский')
+    bot.send_message(message.from_user.id, "Какой твой пол?",reply_markup=keyboard)
     bot.register_next_step_handler(message, get_gender);
 
 
