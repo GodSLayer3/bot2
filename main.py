@@ -1,8 +1,5 @@
 import telebot
-from telebot import types
-import config
-
-bot = telebot.TeleBot(config.TOKEN)
+from bot import bot
 
 name = '';
 gender = '';
@@ -18,13 +15,24 @@ def start(message):
         bot.send_message(message.from_user.id, 'Напиши /start');
 
 
-def get_name(message):  # получаем фамилию
+def get_name(message):
     global name;
-    name = message.text;
+    if len(message.text) > 2 and len(message.text) < 20:
+        name = message.text
+        keyboard = telebot.types.ReplyKeyboardMarkup(True, True)
+        keyboard.row('Мужской', 'Женский')
+        bot.send_message(message.from_user.id, "Какой твой пол?", reply_markup=keyboard)
+        bot.register_next_step_handler(message, get_gender)
+    else:
+        bot.send_message(message.from_user.id, 'От двух до 20');
+        bot.register_next_step_handler(message, get_new_name)
+def get_new_name(message):
+    global name
+    name = message.text
     keyboard = telebot.types.ReplyKeyboardMarkup(True, True)
     keyboard.row('Мужской', 'Женский')
-    bot.send_message(message.from_user.id, "Какой твой пол?",reply_markup=keyboard)
-    bot.register_next_step_handler(message, get_gender);
+    bot.send_message(message.from_user.id, "Какой твой пол?", reply_markup=keyboard)
+    bot.register_next_step_handler(message, get_gender)
 
 
 def get_gender(message):
@@ -34,26 +42,34 @@ def get_gender(message):
         bot.send_message(message.from_user.id, 'Сколько тебе лет?');
         bot.register_next_step_handler(message, get_age);
     elif message.text == "Женский":
-        pol = message.text
-        bot.send_message(message.from_user.id, 'Сколько тебе лет?');
-        bot.register_next_step_handler(message, get_age);
+        gender = message.text
+        bot.send_message(message.from_user.id, 'Сколько тебе лет?')
+        bot.register_next_step_handler(message, get_age)
     else:
-        bot.send_message(message.from_user.id, 'Попробуй ещё раз');
-        bot.register_next_step_handler(message, get_gender);
+        bot.send_message(message.from_user.id, 'Попробуй ещё раз')
+        bot.register_next_step_handler(message, get_gender)
 
 
 def get_age(message):
-    global age;
-    while age == 0:
-        try:
-            age = int(message.text)
-        except Exception:
-            bot.send_message(message.from_user.id, 'Цифрами, пожалуйста');
+    global age
+    if not str(message.text).isdigit():
+        bot.send_message(message.from_user.id, 'Цифрами, пожалуйста')
+    else:
+        age = int(message.text)
         keyboard = telebot.types.ReplyKeyboardMarkup(True, True)
         keyboard.row('Настройки', 'Информация о вас')
         bot.send_message(message.chat.id, "Выбери что дальше", reply_markup=keyboard)
-        bot.register_next_step_handler(message, settings);
+        bot.register_next_step_handler(message, settings)
+    bot.register_next_step_handler(message, get_new_age)
 
+
+def get_new_age(message):
+    global age
+    age = int(message.text)
+    keyboard = telebot.types.ReplyKeyboardMarkup(True, True)
+    keyboard.row('Настройки', 'Информация о вас')
+    bot.send_message(message.chat.id, "Выбери что дальше", reply_markup=keyboard)
+    bot.register_next_step_handler(message, settings)
 
 def settings(message):
     global gender
@@ -70,7 +86,6 @@ def settings(message):
         settings_markup.row('Изменить имя', 'Изменить возраст', 'Изменить пол', 'Назад')
         bot.send_message(message.chat.id, "Что хочешь поменять:", reply_markup=settings_markup)
         bot.register_next_step_handler(message, changesettings);
-    bot.register_next_step_handler(message, back);
 
 
 def back(message):
@@ -102,14 +117,16 @@ def settings2(message):
 
 def changesettings(message):
     if message.text == "Изменить пол":
-        bot.send_message(message.chat.id, "Какой твой пол?")
-        bot.register_next_step_handler(message, changegender);
+        keyboard3 = telebot.types.ReplyKeyboardMarkup(True, True)
+        keyboard3.row('Мужской', 'Женский')
+        bot.send_message(message.from_user.id, "Какой твой пол?", reply_markup=keyboard3)
+        bot.register_next_step_handler(message, changegender)
     elif message.text == "Изменить возраст":
         bot.send_message(message.chat.id, "Какой твой возраст?")
-        bot.register_next_step_handler(message, changeage);
+        bot.register_next_step_handler(message, changeage)
     elif message.text == "Изменить имя":
         bot.send_message(message.chat.id, "Какое новое имя?")
-        bot.register_next_step_handler(message, changename);
+        bot.register_next_step_handler(message, changename)
 
 def changegender(message):
     global gender
@@ -126,13 +143,11 @@ def changegender(message):
     bot.register_next_step_handler(message, back);
 def changeage(message):
     global age
-    while age == 0:
-        try:
-            age = int(message.text)
-            bot.register_next_step_handler(message, back);
-        except Exception:
-            bot.send_message(message.from_user.id, 'Цифрами, пожалуйста');
-            bot.register_next_step_handler(message, changeage);
+    try:
+        age = int(message.text)
+    except Exception:
+         bot.send_message(message.from_user.id, 'Цифрами, пожалуйста');
+         bot.register_next_step_handler(message, changeage);
     keyboard2 = telebot.types.ReplyKeyboardMarkup(True, True)
     keyboard2.row('Назад')
     bot.send_message(message.chat.id, "Запомнил", reply_markup=keyboard2)
@@ -140,7 +155,10 @@ def changeage(message):
 
 def changename(message):
     global name
-    name = message.text;
+    if len(message.text) > 2 and len(message.text) < 20:
+        name = message.text
+    else:
+        bot.send_message(message.from_user.id, 'От двух до 20');
     keyboard2 = telebot.types.ReplyKeyboardMarkup(True, True)
     keyboard2.row('Назад')
     bot.send_message(message.chat.id, "Запомнил", reply_markup=keyboard2)
